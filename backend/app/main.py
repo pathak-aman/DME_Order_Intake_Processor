@@ -77,3 +77,4 @@ async def log_requests(request: Request, call_next):
     response = await call_next(request)
     logger.info("← %s %s [%d]", request.method, request.url.path, response.status_code)
     return response
+
