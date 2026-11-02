@@ -9,7 +9,7 @@
       }
     },
     {
-      "src": "public/**",
+      "src": "frontend/**",
       "use": "@vercel/static"
     }
   ],
@@ -20,12 +20,11 @@
     },
     {
       "src": "/dashboard.html",
-      "dest": "/public/dashboard.html"
+      "dest": "/frontend/dme_order_intake_dashboard.html"
     },
     {
-      "src": "/",
-      "dest": "/public/index.html"
+      "src": "/(.*)",
+      "dest": "/frontend/$1"
     }
   ]
 }
-
