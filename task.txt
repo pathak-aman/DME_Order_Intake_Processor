@@ -1,0 +1,46 @@
+Full Stack AI Engineer: Take-home
+assessment
+Build a small order-intakeservice, the way an AI-native team would
+
+Background
+Much of healthcare still runs on faxed orders. A durable medical equipment (DME) supplier
+receives a scanned PDF from a doctor's office, and a person types the patient and provider
+details into a system by hand. GenHealth automates that work, and a wrong value means a
+denied claim or a delayed patient.
+GenHealth is AI-native. We use agents wherever we can, because they give us leverage and
+help us move faster. Build this the way you would on a team like ours.
+What happens next: If your submission works, we'll schedule a 90-minute pair
+programming session where we make a small change to your project together, using AI the
+way you normally would.
+
+The Task
+Build a REST API in Python that does the following, plus whatever else you think a
+production-ready MVP needs:
+1. Performs CRUD operations on an “Order” and saves it to a database
+2. Accepts an uploaded PDF and extracts the patient’s first name, last name and date of
+birth, and the ordering provider’s name and NPI (we will test it with PDFs you have
+never seen, including scanned faxes and messy, multi-page documents)
+3. Checks the extracted values before saving them, and doesn’t guess when a field is
+missing
+4. Requires authentication, so each user can only see their own orders
+5. Is deployed somewhere publicly accessible
+
+Sample Data
+Here is a sample DME order PDF you can use to test your document upload.
+
+Requirements
+● Your solution must be deployed and reachable at a public endpoint, with a working
+document upload endpoint. If there is no public solution, your application will not be
+considered.
+● The API must be written in Python. A frontend, if you build one, must use JavaScript
+or TypeScript.
+● You may use any AIs to assist you as you develop.
+● Keep secrets such as API keys out of the repository.
+● Commit as you go, so we can follow your git history.
+● Timebox your attempt to a maximum of 3 hours.
+
+Deliverable
+At the end of a consecutive 3-hour period, email the public URL and a link to your
+repository (or a zipped copy that includes the .git folder) to mahum@genhealth.ai and
+mike@genhealth.ai.
+Good luck!
