@@ -1,13 +1,17 @@
 """
-Vercel serverless entry point.
-Vercel expects a WSGI/ASGI app exported as `app` from api/index.py.
-We import the FastAPI app from the backend package.
+Vercel Serverless Function entry point.
+Exports FastAPI `app` for Vercel Python runtime.
 """
-import sys
 import os
+import sys
 
-# Add root directory to sys.path so python can resolve 'backend' imports
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Ensure both api/ and root directory are in sys.path
+api_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.dirname(api_dir)
 
-from backend.app.main import app
+for path in (api_dir, root_dir):
+    if path not in sys.path:
+        sys.path.insert(0, path)
 
+# Import the FastAPI app instance from api/app/main.py
+from app.main import app  # noqa: E402, F401

@@ -4,8 +4,10 @@ AI-native REST API for processing durable medical equipment (DME) orders from fa
 
 ## Live Demo
 
-> **URL:** _(add Vercel URL after deploy)_
-> **API Docs:** `<URL>/docs`
+> **URL:** https://dme-order-intake-processor.vercel.app/
+> **Dashboard:** https://dme-order-intake-processor.vercel.app/dashboard.html
+> **API Docs (Swagger UI):** https://dme-order-intake-processor.vercel.app/docs
+> **Health Check:** https://dme-order-intake-processor.vercel.app/health
 
 ---
 
@@ -14,12 +16,12 @@ AI-native REST API for processing durable medical equipment (DME) orders from fa
 | Layer | Technology |
 |---|---|
 | Framework | FastAPI (Python 3.11+) |
-| Database | PostgreSQL (Neon.tech free tier) |
+| Database | PostgreSQL (Neon.tech / Supabase) with SQLite local fallback |
 | ORM | SQLAlchemy 2.0 |
 | Auth | JWT (python-jose + passlib/bcrypt) |
 | PDF Extraction | Google Gemini Flash (multimodal) |
 | Deployment | Vercel (Python serverless + static frontend) |
-| Frontend | Vanilla JS + Tailwind CSS |
+| Frontend | Tailwind CSS + Lucide Icons + Vanilla JS |
 
 ---
 
@@ -28,22 +30,23 @@ AI-native REST API for processing durable medical equipment (DME) orders from fa
 ```
 .
 ├── api/
-│   └── index.py          # Vercel Python entry point
-├── backend/
-│   ├── app/
-│   │   ├── main.py       # FastAPI app factory
-│   │   ├── config.py     # Settings (pydantic-settings)
-│   │   ├── database.py   # SQLAlchemy engine
-│   │   ├── models.py     # User, Order ORM models
-│   │   ├── schemas.py    # Pydantic request/response schemas
-│   │   ├── auth.py       # JWT + password hashing
-│   │   └── routers/
-│   │       ├── auth.py   # /auth/register, /auth/token
-│   │       └── orders.py # CRUD + /orders/upload
-│   └── requirements.txt
-├── frontend/
-│   └── index.html        # Single-page dashboard UI
-├── vercel.json
+│   ├── index.py          # Vercel Serverless Function entry point
+│   ├── requirements.txt  # Python dependencies mirror
+│   └── app/
+│       ├── main.py       # FastAPI application factory & routes
+│       ├── config.py     # Pydantic Settings with resilient defaults
+│       ├── database.py   # SQLAlchemy engine & session factory
+│       ├── models.py     # User & Order ORM models
+│       ├── schemas.py    # Pydantic request/response validation
+│       ├── auth.py       # JWT creation, hashing & auth dependency
+│       └── routers/
+│           ├── auth.py   # POST /auth/register, POST /auth/token
+│           └── orders.py # Orders CRUD & POST /orders/upload
+├── public/
+│   ├── index.html        # Landing page (served at /)
+│   └── dashboard.html    # DME Order Intake Dashboard (served at /dashboard.html)
+├── requirements.txt      # Root dependencies for Vercel Python runtime
+├── vercel.json           # Vercel serverless rewrites
 ├── .env.example
 └── README.md
 ```
@@ -53,13 +56,12 @@ AI-native REST API for processing durable medical equipment (DME) orders from fa
 ## Local Development
 
 ### 1. Prerequisites
-- Python 3.11+
-- PostgreSQL database (or free [Neon.tech](https://neon.tech) account)
+- Python 3.10+
+- (Optional) PostgreSQL database or local SQLite fallback
 
 ### 2. Setup
 
 ```bash
-cd backend
 python -m venv .venv
 .venv\Scripts\activate          # Windows
 # source .venv/bin/activate     # Mac/Linux
@@ -69,7 +71,7 @@ pip install -r requirements.txt
 
 ### 3. Environment Variables
 
-Copy `.env.example` to `.env` in the project root and fill in values:
+Copy `.env.example` to `.env` in the project root:
 
 ```bash
 cp .env.example .env
@@ -77,16 +79,15 @@ cp .env.example .env
 
 | Variable | Description |
 |---|---|
-| `SECRET_KEY` | Random secret: `python -c "import secrets; print(secrets.token_hex(32))"` |
-| `DATABASE_URL` | PostgreSQL URL, e.g. `postgresql://user:pass@host/dbname` |
-| `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com) API key |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | JWT expiry (default: `60`) |
+| `DATABASE_URL` | PostgreSQL connection string (defaults to local SQLite if omitted) |
+| `SECRET_KEY` | JWT signing secret |
+| `GEMINI_API_KEY` | Google AI Studio key for document extraction (Phase 3) |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Token lifetime in minutes (default: `1440`) |
 
 ### 4. Run
 
 ```bash
-cd backend
-uvicorn app.main:app --reload --port 8000
+uvicorn api.app.main:app --reload --port 8000
 ```
 
 - API docs: http://localhost:8000/docs

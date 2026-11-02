@@ -42,7 +42,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <!-- Logo & Branding -->
-                <div class="flex items-center space-x-3">
+                <a href="/" class="flex items-center space-x-3 hover:opacity-90 transition-opacity">
                     <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-sky-500/20">
                         <i data-lucide="file-check-2" class="w-6 h-6"></i>
                     </div>
@@ -53,10 +53,14 @@
                         </div>
                         <p class="text-xs text-slate-500">AI-Native Document Processing</p>
                     </div>
-                </div>
+                </a>
 
                 <!-- API Host Config & User Actions -->
                 <div class="flex items-center space-x-3">
+                    <a href="/docs" target="_blank" class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors border border-slate-200">
+                        <i data-lucide="book-open" class="w-3.5 h-3.5 text-slate-500"></i>
+                        <span>API Docs</span>
+                    </a>
                     <!-- API Endpoint Button / Config modal trigger -->
                     <button onclick="toggleApiSettings()" title="API Base URL Configuration" class="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors border border-slate-200">
                         <i data-lucide="server" class="w-3.5 h-3.5 text-slate-500"></i>
