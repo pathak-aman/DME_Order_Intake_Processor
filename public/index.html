@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenHealth AI — DME Order Intake</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50:  '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        }
+                    },
+                    animation: {
+                        'fade-up': 'fadeUp 0.6s ease-out forwards',
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .gradient-text {
+            background: linear-gradient(135deg, #0284c7 0%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero-glow {
+            background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(2,132,199,0.15) 0%, transparent 60%);
+        }
+        .card-hover {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px -12px rgba(0,0,0,0.1);
+        }
+        .step-line::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 100%;
+            width: 2px;
+            height: 40px;
+            background: linear-gradient(to bottom, #e2e8f0, transparent);
+            transform: translateX(-50%);
+        }
+    </style>
+</head>
+<body class="font-sans bg-white text-slate-800 antialiased">
+
+    <!-- ── NAVBAR ─────────────────────────────────────────────────────────── -->
+    <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center space-x-3">
+                    <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-sky-500/20">
+                        <i data-lucide="file-check-2" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <span class="font-bold text-slate-900 text-base tracking-tight">GenHealth</span>
+                        <span class="ml-2 text-[10px] font-semibold bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full border border-sky-200 uppercase tracking-wider">AI</span>
+                    </div>
+                </div>
+
+                <!-- Nav Links -->
+                <div class="hidden sm:flex items-center space-x-6 text-sm font-medium text-slate-600">
+                    <a href="#features" class="hover:text-sky-600 transition-colors">Features</a>
+                    <a href="#how-it-works" class="hover:text-sky-600 transition-colors">How it works</a>
+                    <a href="#api" class="hover:text-sky-600 transition-colors">API Docs</a>
+                </div>
+
+                <!-- CTA -->
+                <div class="flex items-center space-x-2">
+                    <a href="/dashboard.html" class="hidden sm:inline-flex items-center space-x-1.5 px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="/dashboard.html" class="inline-flex items-center space-x-1.5 px-4 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-lg transition-colors shadow-sm shadow-sky-600/30">
+                        <i data-lucide="zap" class="w-4 h-4"></i>
+                        <span>Get Started</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ── HERO ───────────────────────────────────────────────────────────── -->
+    <section class="hero-glow pt-20 pb-24 px-4 sm:px-6 lg:px-8 text-center relative overflow-hidden">
+        <!-- Background decoration -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute -top-40 -right-32 w-96 h-96 bg-sky-100 rounded-full opacity-40 blur-3xl"></div>
+            <div class="absolute -top-20 -left-32 w-80 h-80 bg-indigo-100 rounded-full opacity-30 blur-3xl"></div>
+        </div>
+
+        <div class="max-w-4xl mx-auto relative">
+            <!-- Badge -->
+            <div class="inline-flex items-center space-x-2 bg-sky-50 border border-sky-200 text-sky-700 text-xs font-semibold px-4 py-1.5 rounded-full mb-6 animate-fade-in">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
+                </span>
+                <span>AI-Native · Production Ready · Zero Guessing</span>
+            </div>
+
+            <!-- Headline -->
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-tight tracking-tight mb-6 animate-fade-up" style="animation-delay:0.1s; opacity:0">
+                DME Order Intake,<br>
+                <span class="gradient-text">Automated by AI</span>
+            </h1>
+
+            <!-- Sub -->
+            <p class="text-lg sm:text-xl text-slate-500 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-up" style="animation-delay:0.2s; opacity:0">
+                Drop a scanned fax. Get structured patient and provider data in seconds.
+                No hallucinations — missing fields are explicitly marked <code class="bg-slate-100 text-slate-600 text-sm px-1.5 py-0.5 rounded border border-slate-200 font-mono">null</code>.
+            </p>
+
+            <!-- CTAs -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-up" style="animation-delay:0.3s; opacity:0">
+                <a href="/dashboard.html" class="flex items-center space-x-2 px-6 py-3 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-xl shadow-lg shadow-sky-600/25 transition-all hover:scale-105">
+                    <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+                    <span>Open Order Intake Dashboard</span>
+                </a>
+                <a href="/docs" target="_blank" class="flex items-center space-x-2 px-6 py-3 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl border border-slate-200 shadow-sm transition-all hover:scale-105">
+                    <i data-lucide="code-2" class="w-5 h-5 text-slate-500"></i>
+                    <span>Explore API Docs</span>
+                </a>
+            </div>
+
+            <!-- API URL pill -->
+            <div class="mt-8 inline-flex items-center space-x-2 text-xs font-mono text-slate-400 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg animate-fade-up" style="animation-delay:0.4s; opacity:0">
+                <i data-lucide="server" class="w-3.5 h-3.5 text-slate-400"></i>
+                <span id="apiUrlDisplay">Loading API endpoint...</span>
+                <button onclick="copyApiUrl()" title="Copy" class="text-slate-300 hover:text-sky-500 transition-colors">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── STATS BAR ───────────────────────────────────────────────────────── -->
+    <section class="bg-slate-900 text-white py-10">
+        <div class="max-w-5xl mx-auto px-4 grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
+            <div>
+                <div class="text-3xl font-bold text-sky-400">5</div>
+                <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider">Fields Extracted</div>
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-emerald-400">0</div>
+                <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider">Hallucinations</div>
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-amber-400">&lt;10s</div>
+                <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider">Per Document</div>
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-indigo-400">REST</div>
+                <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider">Full API</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── FEATURES ───────────────────────────────────────────────────────── -->
+    <section id="features" class="py-24 px-4 sm:px-6 lg:px-8 bg-slate-50">
+        <div class="max-w-5xl mx-auto">
+            <div class="text-center mb-16">
+                <div class="inline-flex items-center space-x-2 text-xs font-semibold text-sky-600 bg-sky-50 border border-sky-100 px-3 py-1 rounded-full mb-3 uppercase tracking-wider">Features</div>
+                <h2 class="text-3xl sm:text-4xl font-bold text-slate-900">Everything a production intake needs</h2>
+                <p class="text-slate-500 mt-3 text-base max-w-xl mx-auto">Built AI-native, deployed in minutes, ready for real-world fax chaos.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Feature cards -->
+                <div class="card-hover bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                    <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center mb-4">
+                        <i data-lucide="scan-text" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-slate-900 mb-2">Intelligent PDF Extraction</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">Powered by Gemini Vision. Handles scanned faxes, rotated pages, and multi-page DME orders without breaking a sweat.</p>
+                </div>
+
+                <div class="card-hover bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
+                        <i data-lucide="shield-check" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-slate-900 mb-2">Zero-Guessing Policy</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">Missing fields are returned as <code class="font-mono bg-slate-100 px-1 rounded">null</code>, never invented. NPI must be exactly 10 digits or it's flagged for review.</p>
+                </div>
+
+                <div class="card-hover bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                    <div class="w-10 h-10 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center mb-4">
+                        <i data-lucide="lock" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-slate-900 mb-2">Per-User Auth Isolation</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">JWT Bearer authentication. Each user sees only their own orders — full tenant isolation, no shared data leakage.</p>
+                </div>
+
+                <div class="card-hover bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                    <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center mb-4">
+                        <i data-lucide="layers" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-slate-900 mb-2">Full CRUD API</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">Create, read, update, and delete orders. Manual entry or PDF upload — both supported. Full OpenAPI schema at <code class="font-mono bg-slate-100 px-1 rounded">/docs</code>.</p>
+                </div>
+
+                <div class="card-hover bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                    <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center mb-4">
+                        <i data-lucide="database" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-slate-900 mb-2">PostgreSQL Backed</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">SQLAlchemy ORM with Neon PostgreSQL. Orders persist across requests, sessions, and deployments.</p>
+                </div>
+
+                <div class="card-hover bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                    <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center mb-4">
+                        <i data-lucide="globe" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-slate-900 mb-2">Deployed on Vercel</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">Serverless Python backend + static frontend. Zero cold-start config, auto-scaling, and a public URL out of the box.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── HOW IT WORKS ───────────────────────────────────────────────────── -->
+    <section id="how-it-works" class="py-24 px-4 sm:px-6 lg:px-8 bg-white">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-16">
+                <div class="inline-flex items-center space-x-2 text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-full mb-3 uppercase tracking-wider">Workflow</div>
+                <h2 class="text-3xl sm:text-4xl font-bold text-slate-900">From fax to structured data</h2>
+                <p class="text-slate-500 mt-3 text-base max-w-xl mx-auto">Four steps from raw PDF to a verified, queryable order record.</p>
+            </div>
+
+            <div class="relative">
+                <!-- Vertical connector line -->
+                <div class="hidden sm:block absolute left-1/2 top-8 bottom-8 w-px bg-slate-100 -translate-x-1/2"></div>
+
+                <div class="space-y-8">
+                    <!-- Step 1 -->
+                    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                        <div class="flex-1 sm:text-right order-2 sm:order-1">
+                            <h3 class="text-base font-semibold text-slate-900 mb-1">1. Authenticate</h3>
+                            <p class="text-sm text-slate-500">Register an account and log in to get your JWT Bearer token. Each session is isolated to your user.</p>
+                        </div>
+                        <div class="relative z-10 w-12 h-12 shrink-0 rounded-full bg-sky-600 text-white flex items-center justify-center shadow-lg shadow-sky-600/30 order-1 sm:order-2">
+                            <i data-lucide="key-round" class="w-5 h-5"></i>
+                        </div>
+                        <div class="flex-1 order-3 hidden sm:block"></div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                        <div class="flex-1 order-3 sm:order-1 hidden sm:block"></div>
+                        <div class="relative z-10 w-12 h-12 shrink-0 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30 order-1 sm:order-2">
+                            <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+                        </div>
+                        <div class="flex-1 order-2 sm:order-3">
+                            <h3 class="text-base font-semibold text-slate-900 mb-1">2. Upload the PDF</h3>
+                            <p class="text-sm text-slate-500">Drag and drop a faxed order — scanned, messy, multi-page. Our API accepts it all via <code class="font-mono text-xs bg-slate-100 px-1 py-0.5 rounded">POST /orders/upload</code>.</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                        <div class="flex-1 sm:text-right order-2 sm:order-1">
+                            <h3 class="text-base font-semibold text-slate-900 mb-1">3. AI Extracts & Validates</h3>
+                            <p class="text-sm text-slate-500">Gemini reads the document. Patient name, DOB, provider name, and NPI are extracted with strict validation. Ambiguous → <code class="font-mono text-xs bg-slate-100 px-1 py-0.5 rounded">null</code>.</p>
+                        </div>
+                        <div class="relative z-10 w-12 h-12 shrink-0 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30 order-1 sm:order-2">
+                            <i data-lucide="sparkles" class="w-5 h-5"></i>
+                        </div>
+                        <div class="flex-1 order-3 hidden sm:block"></div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                        <div class="flex-1 order-3 sm:order-1 hidden sm:block"></div>
+                        <div class="relative z-10 w-12 h-12 shrink-0 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/30 order-1 sm:order-2">
+                            <i data-lucide="table" class="w-5 h-5"></i>
+                        </div>
+                        <div class="flex-1 order-2 sm:order-3">
+                            <h3 class="text-base font-semibold text-slate-900 mb-1">4. Review & Manage</h3>
+                            <p class="text-sm text-slate-500">The order lands in your dashboard. Edit, approve, or delete records. Full CRUD via the UI or the REST API.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── API SNIPPET ────────────────────────────────────────────────────── -->
+    <section id="api" class="py-24 px-4 sm:px-6 lg:px-8 bg-slate-900">
+        <div class="max-w-5xl mx-auto">
+            <div class="text-center mb-12">
+                <div class="inline-flex items-center space-x-2 text-xs font-semibold text-sky-400 bg-sky-900/50 border border-sky-800 px-3 py-1 rounded-full mb-3 uppercase tracking-wider">REST API</div>
+                <h2 class="text-3xl sm:text-4xl font-bold text-white">Simple, predictable API</h2>
+                <p class="text-slate-400 mt-3 text-base max-w-xl mx-auto">Full OpenAPI schema available at <a href="/docs" target="_blank" class="text-sky-400 hover:underline font-mono">/docs</a>. Integrate in minutes.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Upload example -->
+                <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+                    <div class="flex items-center justify-between px-4 py-2.5 bg-slate-700/50 border-b border-slate-700">
+                        <span class="text-xs font-mono text-slate-300">POST /orders/upload</span>
+                        <span class="text-[10px] bg-sky-900 text-sky-300 px-2 py-0.5 rounded font-semibold">PDF → JSON</span>
+                    </div>
+                    <pre class="p-4 text-xs font-mono text-slate-300 overflow-x-auto leading-relaxed"><span class="text-slate-500"># Upload a faxed DME order</span>
+curl -X POST <span class="text-sky-400">/orders/upload</span> \
+  -H <span class="text-emerald-400">"Authorization: Bearer &lt;token&gt;"</span> \
+  -F <span class="text-amber-400">"file=@order.pdf"</span>
+
+<span class="text-slate-500"># Response:</span>
+{
+  <span class="text-sky-400">"id"</span>: 42,
+  <span class="text-sky-400">"patient_first_name"</span>: <span class="text-emerald-400">"John"</span>,
+  <span class="text-sky-400">"patient_last_name"</span>: <span class="text-emerald-400">"Doe"</span>,
+  <span class="text-sky-400">"patient_dob"</span>: <span class="text-emerald-400">"1980-05-14"</span>,
+  <span class="text-sky-400">"provider_name"</span>: <span class="text-emerald-400">"Dr. Jane Smith"</span>,
+  <span class="text-sky-400">"provider_npi"</span>: <span class="text-rose-400">null</span>,
+  <span class="text-sky-400">"status"</span>: <span class="text-amber-400">"needs_review"</span>
+}</pre>
+                </div>
+
+                <!-- Auth example -->
+                <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+                    <div class="flex items-center justify-between px-4 py-2.5 bg-slate-700/50 border-b border-slate-700">
+                        <span class="text-xs font-mono text-slate-300">POST /auth/token</span>
+                        <span class="text-[10px] bg-emerald-900 text-emerald-300 px-2 py-0.5 rounded font-semibold">JWT Auth</span>
+                    </div>
+                    <pre class="p-4 text-xs font-mono text-slate-300 overflow-x-auto leading-relaxed"><span class="text-slate-500"># Register</span>
+curl -X POST <span class="text-sky-400">/auth/register</span> \
+  -H <span class="text-emerald-400">"Content-Type: application/json"</span> \
+  -d <span class="text-amber-400">'{"email":"you@clinic.org","password":"••••"}'</span>
+
+<span class="text-slate-500"># Login → get token</span>
+curl -X POST <span class="text-sky-400">/auth/token</span> \
+  -d <span class="text-amber-400">"username=you@clinic.org&password=••••"</span>
+
+<span class="text-slate-500"># Response:</span>
+{
+  <span class="text-sky-400">"access_token"</span>: <span class="text-emerald-400">"eyJhbGci..."</span>,
+  <span class="text-sky-400">"token_type"</span>: <span class="text-emerald-400">"bearer"</span>
+}</pre>
+                </div>
+            </div>
+
+            <div class="mt-8 text-center">
+                <a href="/docs" target="_blank" class="inline-flex items-center space-x-2 px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-medium text-sm rounded-xl transition-colors shadow-lg shadow-sky-900/50">
+                    <i data-lucide="book-open" class="w-4 h-4"></i>
+                    <span>Open Full API Reference</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── FOOTER ─────────────────────────────────────────────────────────── -->
+    <footer class="bg-white border-t border-slate-100 py-10 px-4">
+        <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="h-8 w-8 rounded-lg bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center text-white">
+                    <i data-lucide="file-check-2" class="w-4 h-4"></i>
+                </div>
+                <span class="text-sm font-semibold text-slate-800">GenHealth AI — DME Intake</span>
+            </div>
+            <div class="flex items-center space-x-6 text-xs text-slate-400">
+                <a href="/docs" target="_blank" class="hover:text-sky-500 transition-colors">API Docs</a>
+                <a href="/health" target="_blank" class="hover:text-sky-500 transition-colors">Health</a>
+                <a href="/dashboard.html" class="hover:text-sky-500 transition-colors">Dashboard</a>
+                <span class="font-mono">v1.0.0</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Init icons
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            // Show current host as API URL
+            const url = window.location.origin;
+            document.getElementById('apiUrlDisplay').textContent = url;
+        });
+
+        function copyApiUrl() {
+            navigator.clipboard.writeText(window.location.origin).then(() => {
+                const el = document.getElementById('apiUrlDisplay');
+                const prev = el.textContent;
+                el.textContent = 'Copied!';
+                setTimeout(() => el.textContent = prev, 1500);
+            });
+        }
+    </script>
+</body>
+</html>
