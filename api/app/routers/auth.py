@@ -19,6 +19,12 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
     status_code=status.HTTP_201_CREATED,
     summary="Register a new user",
 )
+@router.post(
+    "/register/",
+    response_model=UserOut,
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False,
+)
 def register(user_in: UserCreate, db: Session = Depends(get_db)) -> UserOut:
     """Create a new user account. Email must be unique."""
     # Ensure database tables exist in Neon / Postgres
@@ -49,6 +55,11 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)) -> UserOut:
     "/token",
     response_model=Token,
     summary="Login and get JWT access token",
+)
+@router.post(
+    "/token/",
+    response_model=Token,
+    include_in_schema=False,
 )
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),

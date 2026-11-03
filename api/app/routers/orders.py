@@ -25,6 +25,11 @@ router = APIRouter(prefix="/orders", tags=["Orders"])
     response_model=List[OrderOut],
     summary="List all orders for the authenticated user",
 )
+@router.get(
+    "",
+    response_model=List[OrderOut],
+    include_in_schema=False,
+)
 def list_orders(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -43,6 +48,12 @@ def list_orders(
     response_model=OrderOut,
     status_code=status.HTTP_201_CREATED,
     summary="Manually create a new order",
+)
+@router.post(
+    "",
+    response_model=OrderOut,
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False,
 )
 def create_order(
     order_in: OrderCreate,
@@ -158,6 +169,12 @@ def delete_order(
     response_model=OrderOut,
     status_code=status.HTTP_201_CREATED,
     summary="Upload a PDF and extract DME order fields",
+)
+@router.post(
+    "/upload/",
+    response_model=OrderOut,
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False,
 )
 async def upload_pdf(
     file: UploadFile = File(...),
