@@ -2,31 +2,31 @@
   "rewrites": [
     {
       "source": "/auth/:path*",
-      "destination": "/api/index.py"
+      "destination": "/api/index.py?__route=/auth/:path*"
     },
     {
       "source": "/orders/:path*",
-      "destination": "/api/index.py"
+      "destination": "/api/index.py?__route=/orders/:path*"
     },
     {
       "source": "/api/:path*",
-      "destination": "/api/index.py"
+      "destination": "/api/index.py?__route=/api/:path*"
     },
     {
       "source": "/health",
-      "destination": "/api/index.py"
+      "destination": "/api/index.py?__route=/health"
     },
     {
       "source": "/docs",
-      "destination": "/api/index.py"
+      "destination": "/api/index.py?__route=/docs"
     },
     {
       "source": "/redoc",
-      "destination": "/api/index.py"
+      "destination": "/api/index.py?__route=/redoc"
     },
     {
       "source": "/openapi.json",
-      "destination": "/api/index.py"
+      "destination": "/api/index.py?__route=/openapi.json"
     },
     {
       "source": "/dashboard",
