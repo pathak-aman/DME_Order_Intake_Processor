@@ -9,6 +9,13 @@ An AI-assisted intake portal and FastAPI service for durable medical equipment (
 - [Interactive API documentation](https://dme-order-intake-processor.vercel.app/docs)
 - [Health check](https://dme-order-intake-processor.vercel.app/health)
 
+### Public demo account
+
+Use this disposable account to explore the dashboard. Its credentials are public; do not upload real patient information or store sensitive data in it.
+
+- Email: `abcde@gmail.com`
+- Password: `test123121212`
+
 ## What it does
 
 1. Register an account and sign in with an email and password to obtain a bearer JWT.
@@ -149,3 +156,7 @@ The default SQLite path is local/ephemeral on serverless hosting; use a persiste
 ### PDF extraction
 
 ![PDF extraction and order review in progress](docs/extraction.png)
+
+### Verified extraction from the demo document
+
+![Verified DME order extraction in the dashboard](docs/verfied_extraction_on_demo.png)
