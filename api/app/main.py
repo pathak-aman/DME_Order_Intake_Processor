@@ -2,15 +2,16 @@
 
 import logging
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.database import Base, engine
+from app.database import Base, engine, get_db
 from app.routers import auth, orders
 
-# ─── Logging ─────────────────────────────────────────────────────────────────
+# â”€â”€â”€ Logging â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 logging.basicConfig(
     level=logging.INFO,
@@ -18,7 +19,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ─── Create Tables ────────────────────────────────────────────────────────────
+# â”€â”€â”€ Create Tables â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def init_tables():
     try:
@@ -29,7 +30,7 @@ def init_tables():
 
 init_tables()
 
-# ─── App ──────────────────────────────────────────────────────────────────────
+# â”€â”€â”€ App â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 app = FastAPI(
     title="GenHealth DME Order Intake API",
@@ -45,7 +46,7 @@ app = FastAPI(
     openapi_url="/openapi.json",
 )
 
-# ─── CORS ─────────────────────────────────────────────────────────────────────
+# â”€â”€â”€ CORS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 app.add_middleware(
     CORSMiddleware,
@@ -55,35 +56,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ─── Vercel Path Normalization Middleware ─────────────────────────────────────
-
-@app.middleware("http")
-async def vercel_path_normalizer(request: Request, call_next):
-    """
-    Normalizes request paths when running inside Vercel serverless environment.
-    If Vercel rewrites a request to /api/index.py, the original path is preserved
-    in x-matched-path header.
-    """
-    original_path = request.scope.get("path", "")
-    matched_path = request.headers.get("x-matched-path")
-
-    # If Vercel rewrote internal path to entrypoint, restore the matched path
-    if matched_path and original_path in ("/api/index.py", "/api/index", "/api", "/"):
-        logger.info(f"Vercel rewrite detected: mapping {original_path} -> {matched_path}")
-        request.scope["path"] = matched_path
-
-    logger.info(f"→ {request.method} {request.scope.get('path')} (incoming: {original_path})")
-    response = await call_next(request)
-    logger.info(f"← {request.method} {request.scope.get('path')} [{response.status_code}]")
-    return response
-
-# ─── Startup Event ────────────────────────────────────────────────────────────
+# â”€â”€â”€ Startup Event â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @app.on_event("startup")
 def on_startup():
     init_tables()
 
-# ─── Global Exception Handlers ───────────────────────────────────────────────
+# â”€â”€â”€ Global Exception Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
@@ -93,7 +72,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
         content={"detail": "An internal server error occurred.", "error": str(exc)},
     )
 
-# ─── Routers (Mounted both at root and /api for seamless proxying) ─────────────
+# â”€â”€â”€ Routers (Mounted both at root and /api for seamless proxying) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 # Standard routes: /auth/register, /auth/token, /orders/, etc.
 app.include_router(auth.router)
@@ -103,7 +82,7 @@ app.include_router(orders.router)
 app.include_router(auth.router, prefix="/api")
 app.include_router(orders.router, prefix="/api")
 
-# ─── Health Checks & API root ─────────────────────────────────────────────────
+# â”€â”€â”€ Health Checks & API root â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @app.get("/health", tags=["System"], summary="Health check")
 @app.get("/api/health", tags=["System"], summary="Health check alias")
@@ -130,3 +109,4 @@ def api_root() -> dict:
             "upload": "POST /orders/upload",
         },
     }
+

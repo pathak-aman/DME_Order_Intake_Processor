@@ -1,15 +1,16 @@
 {
+  "version": 2,
   "rewrites": [
     {
-      "source": "/auth/:path*",
+      "source": "/auth/(.*)",
       "destination": "/api/index.py"
     },
     {
-      "source": "/orders/:path*",
+      "source": "/orders/(.*)",
       "destination": "/api/index.py"
     },
     {
-      "source": "/api/:path*",
+      "source": "/api/(.*)",
       "destination": "/api/index.py"
     },
     {
