@@ -81,7 +81,7 @@ def parse_json_from_llm_response(text: str) -> Dict[str, Any]:
 def extract_with_gemini_rest(
     pdf_bytes: bytes,
     api_key: str,
-    model_name: str = "gemini-2.5-flash",
+    model_name: str = "gemini-3.8-flash",
 ) -> Optional[Dict[str, Any]]:
     """Call Google Generative AI REST API using built-in urllib (no external deps required)."""
     endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
@@ -139,9 +139,9 @@ def extract_with_gemini_rest(
         err_body = he.read().decode("utf-8", errors="replace")
         logger.error(f"Gemini API HTTP Error {he.code}: {err_body}")
         # Try fallback model if 404 or model not found
-        if he.code == 404 and model_name == "gemini-2.5-flash":
-            logger.info("Retrying with gemini-2.5-flash-lite...")
-            return extract_with_gemini_rest(pdf_bytes, api_key, model_name="gemini-2.5-flash-lite")
+        if he.code == 404 and model_name == "gemini-3.8-flash":
+            logger.info("Retrying with gemini-3.5-flash-lite...")
+            return extract_with_gemini_rest(pdf_bytes, api_key, model_name="gemini-3.5-flash-lite")
         return None
     except Exception as e:
         logger.error(f"Error calling Gemini REST API: {e}")

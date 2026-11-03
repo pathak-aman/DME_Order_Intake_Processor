@@ -25,7 +25,7 @@ from app.services.extractor import (
 class TestExtractor(unittest.TestCase):
     """Test suite for PDF extraction parsing, markdown handling, and fallback logic."""
 
-    def test_gemini_25_flash_retries_with_flash_lite_on_404(self):
+    def test_gemini_38_flash_retries_with_35_flash_lite_on_404(self):
         """The primary model falls back once to Flash Lite if unavailable."""
         urls = []
 
@@ -51,15 +51,15 @@ class TestExtractor(unittest.TestCase):
             result = extract_with_gemini_rest(b"%PDF-1.4", "test-key")
 
         self.assertEqual(result["patient_first_name"], "Jane")
-        self.assertIn("/models/gemini-2.5-flash:generateContent", urls[0])
-        self.assertIn("/models/gemini-2.5-flash-lite:generateContent", urls[1])
+        self.assertIn("/models/gemini-3.8-flash:generateContent", urls[0])
+        self.assertIn("/models/gemini-3.5-flash-lite:generateContent", urls[1])
         self.assertEqual(len(urls), 2)
 
     def test_gemini_flash_lite_does_not_retry_on_404(self):
         """A missing fallback model must not trigger another retry."""
         error = urllib.error.HTTPError("test", 404, "Not Found", {}, io.BytesIO(b"{}"))
         with patch("app.services.extractor.urllib.request.urlopen", side_effect=error) as urlopen:
-            result = extract_with_gemini_rest(b"%PDF-1.4", "test-key", "gemini-2.5-flash-lite")
+            result = extract_with_gemini_rest(b"%PDF-1.4", "test-key", "gemini-3.5-flash-lite")
         self.assertIsNone(result)
         self.assertEqual(urlopen.call_count, 1)
 
