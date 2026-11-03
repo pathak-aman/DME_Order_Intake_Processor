@@ -1,11 +1,14 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.auth import create_access_token, hash_password, verify_password
-from app.database import get_db
+from app.database import Base, engine, get_db
 from app.models import User
 from app.schemas import Token, UserCreate, UserOut
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -18,7 +21,15 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 )
 def register(user_in: UserCreate, db: Session = Depends(get_db)) -> UserOut:
     """Create a new user account. Email must be unique."""
-    existing = db.query(User).filter(User.email == user_in.email).first()
+    # Ensure database tables exist in Neon / Postgres
+    try:
+        existing = db.query(User).filter(User.email == user_in.email).first()
+    except Exception as e:
+        logger.warning("Query failed, auto-creating schema tables: %s", e)
+        db.rollback()
+        Base.metadata.create_all(bind=engine)
+        existing = db.query(User).filter(User.email == user_in.email).first()
+
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -47,7 +58,14 @@ def login(
     OAuth2 password flow. `username` field accepts the user's email address.
     Returns a Bearer JWT token valid for `ACCESS_TOKEN_EXPIRE_MINUTES` minutes.
     """
-    user = db.query(User).filter(User.email == form_data.username).first()
+    try:
+        user = db.query(User).filter(User.email == form_data.username).first()
+    except Exception as e:
+        logger.warning("Login query failed, ensuring tables exist: %s", e)
+        db.rollback()
+        Base.metadata.create_all(bind=engine)
+        user = db.query(User).filter(User.email == form_data.username).first()
+
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -56,4 +74,3 @@ def login(
         )
     token = create_access_token(data={"sub": str(user.id)})
     return Token(access_token=token)
-

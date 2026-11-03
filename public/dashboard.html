@@ -467,10 +467,19 @@
     <!-- Application JavaScript Logic -->
     <script>
         // State Management
+        // If running in production (e.g. *.vercel.app), ensure localhost isn't erroneously cached
+        let storedHost = localStorage.getItem('dme_api_host') || '';
+        if (window.location.hostname && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
+            if (storedHost.includes('localhost') || storedHost.includes('127.0.0.1')) {
+                localStorage.removeItem('dme_api_host');
+                storedHost = '';
+            }
+        }
+
         let state = {
             // On Vercel, frontend and API share the same domain — use '' (relative).
             // Locally, default to localhost:8000. Override via the API Settings modal.
-            apiHost: localStorage.getItem('dme_api_host') || '',
+            apiHost: storedHost,
             token: localStorage.getItem('dme_auth_token') || '',
             userEmail: localStorage.getItem('dme_user_email') || '',
             orders: [],
@@ -518,11 +527,17 @@
             }
 
             try {
-                const response = await fetch(`${state.apiHost}/orders/`, {
-                    headers: {
-                        'Authorization': `Bearer ${state.token}`
-                    }
+                let ordersUrl = `${state.apiHost}/orders/`;
+                let response = await fetch(ordersUrl, {
+                    headers: { 'Authorization': `Bearer ${state.token}` }
                 });
+
+                if (response.status === 404) {
+                    ordersUrl = `${state.apiHost}/api/orders/`;
+                    response = await fetch(ordersUrl, {
+                        headers: { 'Authorization': `Bearer ${state.token}` }
+                    });
+                }
 
                 if (response.ok) {
                     const data = await response.json();
@@ -569,13 +584,25 @@
             formData.append('file', file);
 
             try {
-                const response = await fetch(`${state.apiHost}/orders/upload`, {
+                let uploadUrl = `${state.apiHost}/orders/upload`;
+                let response = await fetch(uploadUrl, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${state.token}`
                     },
                     body: formData
                 });
+
+                if (response.status === 404) {
+                    uploadUrl = `${state.apiHost}/api/orders/upload`;
+                    response = await fetch(uploadUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${state.token}`
+                        },
+                        body: formData
+                    });
+                }
 
                 if (response.ok) {
                     const newOrder = await response.json();
@@ -728,7 +755,8 @@
 
             if (state.token) {
                 try {
-                    const response = await fetch(`${state.apiHost}/orders/${id}`, {
+                    let putUrl = `${state.apiHost}/orders/${id}`;
+                    let response = await fetch(putUrl, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -736,6 +764,18 @@
                         },
                         body: JSON.stringify(payload)
                     });
+
+                    if (response.status === 404) {
+                        putUrl = `${state.apiHost}/api/orders/${id}`;
+                        response = await fetch(putUrl, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${state.token}`
+                            },
+                            body: JSON.stringify(payload)
+                        });
+                    }
 
                     if (response.ok) {
                         const updated = await response.json();
@@ -772,10 +812,17 @@
 
             if (state.token) {
                 try {
-                    await fetch(`${state.apiHost}/orders/${id}`, {
+                    let delUrl = `${state.apiHost}/orders/${id}`;
+                    let res = await fetch(delUrl, {
                         method: 'DELETE',
                         headers: { 'Authorization': `Bearer ${state.token}` }
                     });
+                    if (res.status === 404) {
+                        await fetch(`${state.apiHost}/api/orders/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${state.token}` }
+                        });
+                    }
                 } catch (e) {
                     console.warn('API delete request failed', e);
                 }
@@ -866,11 +913,21 @@
             const password = document.getElementById('loginPassword').value;
 
             try {
-                const response = await fetch(`${state.apiHost}/auth/token`, {
+                let tokenUrl = `${state.apiHost}/auth/token`;
+                let response = await fetch(tokenUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: new URLSearchParams({ username: email, password: password })
                 });
+
+                if (response.status === 404) {
+                    tokenUrl = `${state.apiHost}/api/auth/token`;
+                    response = await fetch(tokenUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({ username: email, password: password })
+                    });
+                }
 
                 if (response.ok) {
                     const data = await response.json();
@@ -883,7 +940,8 @@
                     showToast('Successfully logged in!', 'success');
                     fetchOrders();
                 } else {
-                    showToast('Invalid credentials', 'error');
+                    const err = await response.json().catch(() => ({}));
+                    showToast(`Login failed: ${err.detail || response.statusText}`, 'error');
                 }
             } catch (err) {
                 showToast('Unable to connect to login authentication endpoint', 'error');
@@ -897,11 +955,21 @@
             const password = document.getElementById('registerPassword').value;
 
             try {
-                const response = await fetch(`${state.apiHost}/auth/register`, {
+                let regUrl = `${state.apiHost}/auth/register`;
+                let response = await fetch(regUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
+
+                if (response.status === 404) {
+                    regUrl = `${state.apiHost}/api/auth/register`;
+                    response = await fetch(regUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                }
 
                 if (response.ok) {
                     showToast('Account created! Please sign in.', 'success');
