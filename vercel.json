@@ -1,38 +1,7 @@
 {
-  "version": 2,
   "rewrites": [
-    {
-      "source": "/auth/(.*)",
-      "destination": "/api/[...path].py"
-    },
-    {
-      "source": "/orders/(.*)",
-      "destination": "/api/[...path].py"
-    },
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/[...path].py"
-    },
-    {
-      "source": "/health",
-      "destination": "/api/[...path].py"
-    },
-    {
-      "source": "/docs",
-      "destination": "/api/[...path].py"
-    },
-    {
-      "source": "/redoc",
-      "destination": "/api/[...path].py"
-    },
-    {
-      "source": "/openapi.json",
-      "destination": "/api/[...path].py"
-    },
-    {
-      "source": "/dashboard",
-      "destination": "/dashboard.html"
-    }
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/dashboard", "destination": "/dashboard.html" }
   ]
 }
 
