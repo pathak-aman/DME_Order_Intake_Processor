@@ -47,7 +47,7 @@ public/dashboard.html        Order intake dashboard
 tests/                      unittest suite
 run_tests.py                 Test runner
 vercel.json                  Frontend-only rewrites
-docs/                        Place website screenshots here when available
+docs/                        Website screenshots
 ```
 
 ## Run locally
@@ -133,4 +133,18 @@ The default SQLite path is local/ephemeral on serverless hosting; use a persiste
 
 ## Website screenshots
 
-Website screenshots will be added under `docs/`. Once captured, place images there (for example `docs/landing.png` and `docs/dashboard.png`) and link them here using Markdown, such as `![Order dashboard](docs/dashboard.png)`. No image links are included yet so the README does not contain broken previews.
+### Landing page
+
+![GenHealth AI landing page](docs/landing.png)
+
+### Account registration
+
+![Dashboard account registration form](docs/auth.png)
+
+### Order dashboard
+
+![DME order intake dashboard](docs/dashboard.png)
+
+### PDF extraction
+
+![PDF extraction and order review in progress](docs/extraction.png)
