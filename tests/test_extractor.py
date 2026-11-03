@@ -2,9 +2,13 @@
 Unit tests for the DME PDF Extractor service and LLM response parsing.
 """
 
+import io
+import json
 import os
 import sys
 import unittest
+import urllib.error
+from unittest.mock import patch
 
 # Ensure api is in sys.path
 api_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "api")
@@ -12,6 +16,7 @@ if api_dir not in sys.path:
     sys.path.insert(0, api_dir)
 
 from app.services.extractor import (
+    extract_with_gemini_rest,
     fallback_extract_from_pdf_text,
     parse_json_from_llm_response,
 )
@@ -19,6 +24,44 @@ from app.services.extractor import (
 
 class TestExtractor(unittest.TestCase):
     """Test suite for PDF extraction parsing, markdown handling, and fallback logic."""
+
+    def test_gemini_25_flash_retries_with_flash_lite_on_404(self):
+        """The primary model falls back once to Flash Lite if unavailable."""
+        urls = []
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_value, traceback):
+                return False
+
+            def read(self):
+                return json.dumps({"candidates": [{"content": {"parts": [
+                    {"text": '{"patient_first_name": "Jane"}'}
+                ]}}]}).encode("utf-8")
+
+        def urlopen(request, timeout):
+            urls.append(request.full_url)
+            if len(urls) == 1:
+                raise urllib.error.HTTPError(request.full_url, 404, "Not Found", {}, io.BytesIO(b"{}"))
+            return FakeResponse()
+
+        with patch("app.services.extractor.urllib.request.urlopen", side_effect=urlopen):
+            result = extract_with_gemini_rest(b"%PDF-1.4", "test-key")
+
+        self.assertEqual(result["patient_first_name"], "Jane")
+        self.assertIn("/models/gemini-2.5-flash:generateContent", urls[0])
+        self.assertIn("/models/gemini-2.5-flash-lite:generateContent", urls[1])
+        self.assertEqual(len(urls), 2)
+
+    def test_gemini_flash_lite_does_not_retry_on_404(self):
+        """A missing fallback model must not trigger another retry."""
+        error = urllib.error.HTTPError("test", 404, "Not Found", {}, io.BytesIO(b"{}"))
+        with patch("app.services.extractor.urllib.request.urlopen", side_effect=error) as urlopen:
+            result = extract_with_gemini_rest(b"%PDF-1.4", "test-key", "gemini-2.5-flash-lite")
+        self.assertIsNone(result)
+        self.assertEqual(urlopen.call_count, 1)
 
     # ─── 1. LLM JSON Response Parsing Tests ──────────────────────────────────
 
