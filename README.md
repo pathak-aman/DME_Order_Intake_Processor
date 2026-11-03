@@ -13,11 +13,11 @@ An AI-assisted intake portal and FastAPI service for durable medical equipment (
 
 1. Register an account and sign in with an email and password to obtain a bearer JWT.
 2. Upload a DME order PDF or create an order manually from the dashboard.
-3. Extract patient first and last name, date of birth, ordering-provider name, and provider NPI. The PDF extractor calls the Gemini REST API with `gemini-3.8-flash` and retries `gemini-3.5-flash-lite` if the primary model returns 404. If the API is unavailable, it attempts a limited plain-text heuristic extraction.
+3. Extract patient first and last name, date of birth, ordering-provider name, and provider NPI. The PDF extractor tries Gemini (`gemini-3.8-flash`, then `gemini-3.5-flash-lite` on 404), followed by OpenAI (`gpt-4.1`) if Gemini fails or is not configured. If neither service succeeds, it attempts a limited plain-text heuristic extraction.
 4. Validate clinical fields (including dates and the NPI checksum). Missing, illegible, or invalid fields remain `null` and the order is marked for review rather than filled in by guesswork.
 5. Review, edit, list, and delete your own orders. API endpoints enforce per-user isolation.
 
-The text-only fallback cannot reliably read scanned/image-only PDFs; configure `GEMINI_API_KEY` for multimodal extraction.
+The text-only fallback cannot reliably read scanned/image-only PDFs; configure `GEMINI_API_KEY` and/or `OPENAI_API_KEY` for multimodal extraction. OpenAI requests use a paid API and may incur charges. **Project note:** $5 was paid for OpenAI API credit for this integration; that is a credit purchase, not a per-document extraction price. Actual usage is billed against the account balance.
 
 ## Technology
 
@@ -26,7 +26,7 @@ The text-only fallback cannot reliably read scanned/image-only PDFs; configure `
 | API | FastAPI, Python 3.10+ |
 | Database | SQLAlchemy 2.0 with PostgreSQL (for production) or SQLite (for local use) |
 | Authentication | JWT via python-jose; passwords hashed with passlib/bcrypt |
-| PDF extraction | Gemini 3.8 Flash / 3.5 Flash Lite via REST, with a limited offline fallback |
+| PDF extraction | Gemini 3.8 Flash / 3.5 Flash Lite, OpenAI GPT-4.1 PDF fallback via Responses API, then limited offline text extraction |
 | Frontend | Static HTML, vanilla JavaScript, Tailwind CSS, Lucide Icons |
 | Hosting | Vercel FastAPI framework entrypoint and `public/` static files |
 
@@ -37,7 +37,7 @@ main.py                     Vercel FastAPI entrypoint
 api/app/main.py              FastAPI app, routers, health check
 api/app/routers/auth.py      Registration and token endpoints
 api/app/routers/orders.py    Order CRUD and PDF uploads
-api/app/services/            Gemini extraction and clinical validation
+api/app/services/            Gemini/OpenAI extraction and clinical validation
 api/app/models.py            SQLAlchemy User and Order models
 api/app/schemas.py           Pydantic request and response schemas
 api/app/config.py            Environment-based settings
@@ -61,13 +61,14 @@ docs/                        Website screenshots
    python -m pip install -r requirements.txt
    ```
 
-2. Copy `.env.example` to `.env` at the repository root. Set a unique `SECRET_KEY`, your `DATABASE_URL`, and `GEMINI_API_KEY` if you want PDF extraction with Gemini. For a local SQLite file you can use `DATABASE_URL=sqlite:///./dme_orders.db`. The code otherwise defaults to SQLite under `/tmp`, which may not exist on Windows. Keep `.env` out of version control.
+2. Copy `.env.example` to `.env` at the repository root. Set a unique `SECRET_KEY`, your `DATABASE_URL`, and a `GEMINI_API_KEY` and/or `OPENAI_API_KEY` for multimodal PDF extraction. For a local SQLite file you can use `DATABASE_URL=sqlite:///./dme_orders.db`. The code otherwise defaults to SQLite under `/tmp`, which may not exist on Windows. Keep `.env` out of version control.
 
    | Setting | Purpose |
    | --- | --- |
    | `DATABASE_URL` | SQLAlchemy PostgreSQL URL in production or SQLite URL locally |
    | `SECRET_KEY` | Secret used to sign JWTs; **set this explicitly in production** |
    | `GEMINI_API_KEY` | Google AI Studio key for multimodal PDF extraction |
+   | `OPENAI_API_KEY` | Optional paid OpenAI PDF fallback (`gpt-4.1`); used when Gemini fails or is not configured |
    | `ACCESS_TOKEN_EXPIRE_MINUTES` | Optional; code default is 1440 (24 hours) |
 
 3. Start the API from the repository root:
@@ -114,20 +115,20 @@ From the repository root, run the entire `unittest` suite:
 python run_tests.py
 ```
 
-You can also run a single module, for example `python -m unittest tests.test_extractor -v`. The current suite contains **30 tests** across four modules:
+You can also run a single module, for example `python -m unittest tests.test_extractor -v`. The current suite contains **35 tests** across four modules:
 
 | Module | What it checks |
 | --- | --- |
 | `tests/test_validator.py` | Placeholder and name handling, DOB parsing and invalid dates, NPI format and checksum, zero-guessing sanitization and review status |
-| `tests/test_extractor.py` | LLM JSON parsing, missing-field behavior, plain-text PDF fallback, and mocked Gemini 3.8 Flash → 3.5 Flash Lite retry on 404 |
+| `tests/test_extractor.py` | LLM JSON parsing, missing-field behavior, plain-text PDF fallback, mocked Gemini retry and OpenAI Responses API PDF requests/fallback |
 | `tests/test_database_crud.py` | In-memory SQLite user isolation, order CRUD, and persistence of missing fields as `NULL` |
 | `tests/test_vercel_routing.py` | Root FastAPI entrypoint and rewrites that do not send API paths to Python filenames |
 
-Gemini HTTP requests are mocked in tests; this suite does **not** test a live Gemini key or the deployed Vercel site.
+Gemini and OpenAI HTTP requests are mocked in tests; this suite does **not** test live API keys or the deployed Vercel site.
 
 ## Deploy on Vercel
 
-Import the repository as a Vercel project and set `SECRET_KEY`, a persistent PostgreSQL `DATABASE_URL`, and `GEMINI_API_KEY` in project environment variables. The root `main.py` exports the FastAPI app so API paths reach FastAPI directly; `public/` is served as static assets. `vercel.json` only rewrites `/` and `/dashboard` to their HTML pages. Do not rewrite `/auth`, `/orders`, or `/api` to a Python filename.
+Import the repository as a Vercel project and set `SECRET_KEY`, a persistent PostgreSQL `DATABASE_URL`, and `GEMINI_API_KEY` and/or `OPENAI_API_KEY` in project environment variables (local `.env` values are not deployed automatically). The root `main.py` exports the FastAPI app so API paths reach FastAPI directly; `public/` is served as static assets. `vercel.json` only rewrites `/` and `/dashboard` to their HTML pages. Do not rewrite `/auth`, `/orders`, or `/api` to a Python filename.
 
 The default SQLite path is local/ephemeral on serverless hosting; use a persistent database for production user accounts and orders. After deployment, check `/health`, `/docs`, and an actual registration/login flow.
 

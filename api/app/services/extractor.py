@@ -1,5 +1,5 @@
 """
-PDF Extraction Service powered by Google Gemini multimodal models.
+PDF Extraction Service using Gemini, OpenAI, and a limited text fallback.
 
 Extracts:
 - patient_first_name
@@ -67,7 +67,7 @@ def parse_json_from_llm_response(text: str) -> Dict[str, Any]:
     try:
         return json.loads(cleaned)
     except Exception as e:
-        logger.error(f"Failed to parse LLM JSON: {e}. Raw response: {text[:300]}")
+        logger.error("Failed to parse LLM JSON (%s)", type(e).__name__)
         return {
             "patient_first_name": None,
             "patient_last_name": None,
@@ -133,11 +133,13 @@ def extract_with_gemini_rest(
                 return None
 
             raw_text = parts[0].get("text", "")
-            return parse_json_from_llm_response(raw_text)
+            extracted = parse_json_from_llm_response(raw_text)
+            if str(extracted.get("notes", "")).startswith("JSON parse error:"):
+                return None
+            return extracted
 
     except urllib.error.HTTPError as he:
-        err_body = he.read().decode("utf-8", errors="replace")
-        logger.error(f"Gemini API HTTP Error {he.code}: {err_body}")
+        logger.error("Gemini API HTTP error %s", he.code)
         # Try fallback model if 404 or model not found
         if he.code == 404 and model_name == "gemini-3.8-flash":
             logger.info("Retrying with gemini-3.5-flash-lite...")
@@ -145,6 +147,63 @@ def extract_with_gemini_rest(
         return None
     except Exception as e:
         logger.error(f"Error calling Gemini REST API: {e}")
+        return None
+
+
+def extract_with_openai_rest(
+    pdf_bytes: bytes,
+    api_key: str,
+    model_name: str = "gpt-4.1",
+) -> Optional[Dict[str, Any]]:
+    """Read a PDF with the vision-capable OpenAI Responses API."""
+    payload = {
+        "model": model_name,
+        "temperature": 0,
+        "input": [{
+            "role": "user",
+            "content": [
+                {
+                    "type": "input_file",
+                    "filename": "dme_order.pdf",
+                    "file_data": "data:application/pdf;base64," + base64.b64encode(pdf_bytes).decode("ascii"),
+                },
+                {"type": "input_text", "text": DME_EXTRACTION_PROMPT},
+            ],
+        }],
+    }
+    request = urllib.request.Request(
+        "https://api.openai.com/v1/responses",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": "Bearer " + api_key,
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            result = json.loads(response.read().decode("utf-8"))
+        if result.get("status") != "completed":
+            logger.warning("OpenAI response was not completed (status: %s)", result.get("status"))
+            return None
+
+        # REST responses contain output messages with output_text content blocks.
+        for item in result.get("output", []):
+            if item.get("type") != "message":
+                continue
+            for part in item.get("content", []):
+                if part.get("type") == "output_text" and part.get("text"):
+                    extracted = parse_json_from_llm_response(part["text"])
+                    if isinstance(extracted, dict) and not str(extracted.get("notes", "")).startswith("JSON parse error:"):
+                        return extracted
+        logger.warning("OpenAI returned no usable JSON output.")
+        return None
+    except urllib.error.HTTPError as error:
+        # Do not log the API key, raw document, or provider response (may contain PHI).
+        logger.error("OpenAI API HTTP error %s", error.code)
+        return None
+    except Exception as error:
+        logger.error("OpenAI extraction failed (%s)", type(error).__name__)
         return None
 
 
@@ -161,9 +220,17 @@ def extract_order_from_pdf(pdf_bytes: bytes) -> Dict[str, Any]:
         extracted = extract_with_gemini_rest(pdf_bytes, api_key)
         if extracted is not None:
             return extracted
-        logger.warning("Gemini extraction returned None. Falling back to heuristic extraction.")
+        logger.warning("Gemini extraction failed. Trying OpenAI if configured.")
 
-    logger.info("No Gemini API key configured or API call failed. Using fallback extraction.")
+    openai_key = settings.OPENAI_API_KEY.strip() or os.getenv("OPENAI_API_KEY", "").strip()
+    if openai_key and not openai_key.startswith("your-"):
+        logger.info("Extracting DME fields via OpenAI PDF fallback...")
+        extracted = extract_with_openai_rest(pdf_bytes, openai_key)
+        if extracted is not None:
+            return extracted
+        logger.warning("OpenAI extraction failed. Using local text fallback.")
+
+    logger.info("No working AI provider configured. Using local text fallback.")
     return fallback_extract_from_pdf_text(pdf_bytes)
 
 

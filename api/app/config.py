@@ -17,6 +17,9 @@ try:
         # Gemini Vision API
         GEMINI_API_KEY: str = ""
 
+        # OpenAI PDF extraction fallback
+        OPENAI_API_KEY: str = ""
+
     settings = Settings()
 
 except ImportError:
@@ -41,5 +44,6 @@ except ImportError:
             self.ALGORITHM = os.getenv("ALGORITHM", "HS256")
             self.ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
             self.GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+            self.OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
     settings = FallbackSettings()
